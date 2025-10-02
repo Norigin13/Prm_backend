@@ -1,0 +1,62 @@
+@MyBackend_HostAddress = http://localhost:5162
+
+GET {{MyBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+# Categories
+GET {{MyBackend_HostAddress}}/api/category
+Accept: application/json
+
+###
+
+# Products
+GET {{MyBackend_HostAddress}}/api/product
+Accept: application/json
+
+###
+
+POST {{MyBackend_HostAddress}}/api/product
+Content-Type: application/json
+
+{
+  "name": "Test Product",
+  "brand": "Test Brand",
+  "category_id": 1,
+  "imageUrl1": "https://example.com/img.jpg",
+  "productPrices": [{ "price": 123456 }],
+  "specs": { "key": "value" }
+}
+
+###
+
+# Auth
+POST {{MyBackend_HostAddress}}/api/user/login
+Content-Type: application/json
+
+{
+  "identifier": "demo@example.com",
+  "password": "123456"
+}
+
+###
+
+POST {{MyBackend_HostAddress}}/api/user/register
+Content-Type: application/json
+
+{
+  "fullname": "New User",
+  "email": "new@example.com",
+  "password": "123456",
+  "phone": "0900000000",
+  "dob": "2000-01-01",
+  "address": "HN"
+}
+
+###
+
+GET {{MyBackend_HostAddress}}/api/user/home
+Accept: application/json
+
+###
