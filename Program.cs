@@ -51,12 +51,14 @@ builder.Services.AddScoped<ServiceFeedbackService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments
+app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyBackend API v1");
+    c.RoutePrefix = "swagger";
+});
 
 // Không bắt buộc redirect HTTPS khi dev
 // app.UseHttpsRedirection();
