@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using MyBackend.Data;
+using PRM_Backend.Data;
 using System.Text.Json;
 
-namespace MyBackend.Services;
+namespace PRM_Backend.Services;
 
 public class ProductService
 {

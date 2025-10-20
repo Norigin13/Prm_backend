@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using MyBackend.Data;
+using PRM_Backend.Data;
 using System.Text;
 using System.Text.Json;
 using BCrypt.Net;
 
-namespace MyBackend.Services;
+namespace PRM_Backend.Services;
 
 public class UserService
 {

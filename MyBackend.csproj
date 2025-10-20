@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>PRM_Backend</AssemblyName>
+    <RootNamespace>PRM_Backend</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace MyBackend.Data;
+namespace PRM_Backend.Data;
 
 public class AppDbContext : DbContext
 {
@@ -14,6 +14,10 @@ public class AppDbContext : DbContext
     public DbSet<ServiceEntity> Services => Set<ServiceEntity>();
     public DbSet<ServiceOrder> ServiceOrders => Set<ServiceOrder>();
     public DbSet<ServiceFeedback> ServiceFeedbacks => Set<ServiceFeedback>();
+    public DbSet<Build> Builds => Set<Build>();
+    public DbSet<BuildItem> BuildItems => Set<BuildItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +112,10 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<ServiceOrder>(ServiceOrderMap);
         modelBuilder.Entity<ServiceFeedback>(ServiceFeedbackMap);
+        modelBuilder.Entity<Build>(BuildMap);
+        modelBuilder.Entity<BuildItem>(BuildItemMap);
+        modelBuilder.Entity<Order>(OrderMap);
+        modelBuilder.Entity<ChatMessage>(ChatMessageMap);
     }
 
     private void ServiceOrderMap(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<ServiceOrder> e)
@@ -144,6 +152,73 @@ public class AppDbContext : DbContext
         e.HasOne(p => p.ServiceOrder)
             .WithMany()
             .HasForeignKey(p => p.ServiceOrderId);
+
+        e.HasOne(p => p.User)
+            .WithMany()
+            .HasForeignKey(p => p.UserId);
+    }
+
+    private void BuildMap(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Build> e)
+    {
+        e.ToTable("builds");
+        e.Property(p => p.Id).HasColumnName("id");
+        e.Property(p => p.UserId).HasColumnName("user_id");
+        e.Property(p => p.Name).HasColumnName("name");
+        e.Property(p => p.TotalPrice).HasColumnName("total_price");
+        e.Property(p => p.CreatedAt).HasColumnName("created_at");
+
+        e.HasOne(p => p.User)
+            .WithMany()
+            .HasForeignKey(p => p.UserId);
+    }
+
+    private void BuildItemMap(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<BuildItem> e)
+    {
+        e.ToTable("build_items");
+        e.Property(p => p.Id).HasColumnName("id");
+        e.Property(p => p.BuildId).HasColumnName("build_id");
+        e.Property(p => p.ProductPriceId).HasColumnName("product_price_id");
+        e.Property(p => p.Quantity).HasColumnName("quantity");
+
+        e.HasOne(p => p.Build)
+            .WithMany(b => b.Items)
+            .HasForeignKey(p => p.BuildId);
+
+        e.HasOne(p => p.ProductPrice)
+            .WithMany()
+            .HasForeignKey(p => p.ProductPriceId);
+    }
+
+    private void OrderMap(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Order> e)
+    {
+        e.ToTable("orders");
+        e.Property(p => p.Id).HasColumnName("id");
+        e.Property(p => p.UserId).HasColumnName("user_id");
+        e.Property(p => p.BuildId).HasColumnName("build_id");
+        e.Property(p => p.Status).HasColumnName("status");
+        e.Property(p => p.TotalPrice).HasColumnName("total_price");
+        e.Property(p => p.PaymentMethod).HasColumnName("payment_method");
+        e.Property(p => p.Phone).HasColumnName("phone");
+        e.Property(p => p.Address).HasColumnName("address");
+        e.Property(p => p.CreatedAt).HasColumnName("created_at");
+
+        e.HasOne(p => p.User)
+            .WithMany()
+            .HasForeignKey(p => p.UserId);
+
+        e.HasOne(p => p.Build)
+            .WithMany()
+            .HasForeignKey(p => p.BuildId);
+    }
+
+    private void ChatMessageMap(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<ChatMessage> e)
+    {
+        e.ToTable("chat_messages");
+        e.Property(p => p.Id).HasColumnName("id");
+        e.Property(p => p.UserId).HasColumnName("user_id");
+        e.Property(p => p.Message).HasColumnName("message");
+        e.Property(p => p.Response).HasColumnName("response");
+        e.Property(p => p.CreatedAt).HasColumnName("created_at");
 
         e.HasOne(p => p.User)
             .WithMany()
@@ -271,4 +346,50 @@ public class User
     public string? Address { get; set; }
     public string Role { get; set; } = "User";
     public DateTime CreatedAt { get; set; }
+}
+
+public class Build
+{
+    public int Id { get; set; }
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal? TotalPrice { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public List<BuildItem> Items { get; set; } = new();
+}
+
+public class BuildItem
+{
+    public int Id { get; set; }
+    public int BuildId { get; set; }
+    public Build Build { get; set; } = null!;
+    public int ProductPriceId { get; set; }
+    public ProductPrice ProductPrice { get; set; } = null!;
+    public int Quantity { get; set; } = 1;
+}
+
+public class Order
+{
+    public int Id { get; set; }
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    public int? BuildId { get; set; }
+    public Build? Build { get; set; }
+    public string? Status { get; set; }
+    public decimal? TotalPrice { get; set; }
+    public string? PaymentMethod { get; set; }
+    public long? Phone { get; set; }
+    public string? Address { get; set; }
+    public DateTime? CreatedAt { get; set; }
+}
+
+public class ChatMessage
+{
+    public int Id { get; set; }
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string? Response { get; set; }
+    public DateTime? CreatedAt { get; set; }
 }
