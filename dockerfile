@@ -9,6 +9,7 @@ RUN dotnet publish -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=build /app .
-# Render cấp biến $PORT → bắt buộc listen trên đó
-ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
-ENTRYPOINT ["dotnet", "MyBackend.dll"]
+# Render tự động inject PORT env, listen trên 0.0.0.0
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080}
+EXPOSE ${PORT:-8080}
+ENTRYPOINT ["dotnet", "PRM_Backend.dll"]

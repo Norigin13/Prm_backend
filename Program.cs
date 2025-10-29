@@ -363,6 +363,20 @@ app.MapDelete("/api/order/{id:int}", async (int id, OrderService orderService) =
     await orderService.DeleteOrderAsync(id))
     .WithTags("Order");
 
+// ==================== HEALTH CHECK ====================
+app.MapGet("/health", () => 
+{
+    return Results.Ok(new 
+    { 
+        status = "healthy", 
+        timestamp = DateTime.UtcNow,
+        service = "PRM_Backend",
+        version = "1.0.0"
+    });
+})
+.WithTags("Health")
+.WithName("HealthCheck");
+
 // ==================== DEMO ENDPOINT ====================
 // Demo weatherforecast giữ lại nếu cần
 var summaries = new[]
