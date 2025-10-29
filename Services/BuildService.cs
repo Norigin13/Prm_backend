@@ -14,27 +14,63 @@ public class BuildService
         _logger = logger;
     }
 
-    public async Task<List<Build>> GetAllBuildsAsync()
+    public async Task<List<BuildDetailResponse>> GetAllBuildsAsync()
     {
-        return await _context.Builds
+        var builds = await _context.Builds
             .Include(b => b.User)
             .Include(b => b.Items)
                 .ThenInclude(i => i.ProductPrice)
                     .ThenInclude(pp => pp.Product)
             .ToListAsync();
+
+        return builds.Select(b => new BuildDetailResponse
+        {
+            Id = b.Id,
+            UserId = b.UserId,
+            Name = b.Name,
+            TotalPrice = b.TotalPrice,
+            CreatedAt = b.CreatedAt,
+            User = b.User,
+            Items = b.Items.Select(i => new BuildItemResponse
+            {
+                Id = i.Id,
+                ProductPriceId = i.ProductPriceId,
+                Quantity = i.Quantity,
+                ProductPrice = i.ProductPrice
+            }).ToList()
+        }).ToList();
     }
 
-    public async Task<Build?> GetBuildByIdAsync(int id)
+    public async Task<BuildDetailResponse?> GetBuildByIdAsync(int id)
     {
-        return await _context.Builds
+        var build = await _context.Builds
             .Include(b => b.User)
             .Include(b => b.Items)
                 .ThenInclude(i => i.ProductPrice)
                     .ThenInclude(pp => pp.Product)
             .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (build == null) return null;
+
+        return new BuildDetailResponse
+        {
+            Id = build.Id,
+            UserId = build.UserId,
+            Name = build.Name,
+            TotalPrice = build.TotalPrice,
+            CreatedAt = build.CreatedAt,
+            User = build.User,
+            Items = build.Items.Select(i => new BuildItemResponse
+            {
+                Id = i.Id,
+                ProductPriceId = i.ProductPriceId,
+                Quantity = i.Quantity,
+                ProductPrice = i.ProductPrice
+            }).ToList()
+        };
     }
 
-    public async Task<Build> CreateBuildAsync(BuildCreateRequest request)
+    public async Task<BuildDetailResponse> CreateBuildAsync(BuildCreateRequest request)
     {
         var build = new Build
         {
@@ -63,7 +99,8 @@ public class BuildService
             await _context.SaveChangesAsync();
         }
 
-        return await GetBuildByIdAsync(build.Id) ?? build;
+        var createdBuild = await GetBuildByIdAsync(build.Id);
+        return createdBuild!;
     }
 
     public async Task<Build?> UpdateBuildAsync(int id, Build updateBuild)
@@ -100,15 +137,32 @@ public class BuildService
         return true;
     }
 
-    public async Task<List<Build>> GetBuildsByUserAsync(int userId)
+    public async Task<List<BuildDetailResponse>> GetBuildsByUserAsync(int userId)
     {
-        return await _context.Builds
+        var builds = await _context.Builds
             .Include(b => b.User)
             .Include(b => b.Items)
                 .ThenInclude(i => i.ProductPrice)
                     .ThenInclude(pp => pp.Product)
             .Where(b => b.UserId == userId)
             .ToListAsync();
+
+        return builds.Select(b => new BuildDetailResponse
+        {
+            Id = b.Id,
+            UserId = b.UserId,
+            Name = b.Name,
+            TotalPrice = b.TotalPrice,
+            CreatedAt = b.CreatedAt,
+            User = b.User,
+            Items = b.Items.Select(i => new BuildItemResponse
+            {
+                Id = i.Id,
+                ProductPriceId = i.ProductPriceId,
+                Quantity = i.Quantity,
+                ProductPrice = i.ProductPrice
+            }).ToList()
+        }).ToList();
     }
 }
 

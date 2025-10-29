@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace PRM_Backend.Data;
 
@@ -231,6 +232,7 @@ public class Category
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    [JsonIgnore]
     public List<Product> Products { get; set; } = new();
 }
 
@@ -238,6 +240,7 @@ public class ProductPrice
 {
     public int Id { get; set; }
     public int ProductId { get; set; }
+    [JsonIgnore]
     public Product Product { get; set; } = null!;
     public decimal Price { get; set; }
     public int? SupplierId { get; set; }
@@ -296,6 +299,7 @@ public class Supplier
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Website { get; set; }
+    [JsonIgnore]
     public List<ProductPrice> ProductPrices { get; set; } = new();
 }
 
@@ -363,6 +367,7 @@ public class BuildItem
 {
     public int Id { get; set; }
     public int BuildId { get; set; }
+    [JsonIgnore]
     public Build Build { get; set; } = null!;
     public int ProductPriceId { get; set; }
     public ProductPrice ProductPrice { get; set; } = null!;

@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using PRM_Backend.Data;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
 using BCrypt.Net;
 
 namespace PRM_Backend.Services;
@@ -37,8 +39,26 @@ public class UserService
     // User endpoints
     public async Task<IResult> RegisterAsync(RegisterRequest req)
     {
+        // Validate input
+        var validationResult = ValidateRegisterRequest(req);
+        if (!validationResult.IsValid)
+        {
+            return Results.BadRequest(new { message = validationResult.ErrorMessage });
+        }
+
         var exists = await _dbContext.Users.AnyAsync(u => u.Email == req.email);
         if (exists) return Results.BadRequest(new { message = "Email đã tồn tại" });
+
+        // Parse date safely
+        DateOnly? dobParsed = null;
+        if (!string.IsNullOrWhiteSpace(req.dob))
+        {
+            if (!DateOnly.TryParseExact(req.dob, new[] { "yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy" }, out var dob))
+            {
+                return Results.BadRequest(new { message = "Định dạng ngày sinh không hợp lệ. Sử dụng yyyy-MM-dd, dd/MM/yyyy hoặc MM/dd/yyyy" });
+            }
+            dobParsed = dob;
+        }
 
         var user = new User
         {
@@ -47,7 +67,7 @@ public class UserService
             Email = req.email!,
             Password = BCrypt.Net.BCrypt.HashPassword(req.password!),
             Phone = req.phone,
-            Dob = string.IsNullOrWhiteSpace(req.dob) ? null : DateOnly.Parse(req.dob!),
+            Dob = dobParsed,
             Address = req.address,
             Role = "User",
             CreatedAt = DateTime.UtcNow
@@ -108,11 +128,30 @@ public class UserService
         if (user is null) return Results.NotFound(new { message = "User không tồn tại" });
 
         if (update.TryGetValue("fullname", out var fullname)) user.Fullname = fullname?.ToString() ?? user.Fullname;
-        if (update.TryGetValue("phone", out var phone)) user.Phone = phone?.ToString() ?? user.Phone;
+        if (update.TryGetValue("phone", out var phone)) 
+        {
+            var phoneStr = phone?.ToString();
+            if (!string.IsNullOrWhiteSpace(phoneStr) && !IsValidPhoneNumber(phoneStr))
+            {
+                return Results.BadRequest(new { message = "Số điện thoại không hợp lệ (10-11 số, bắt đầu 0)" });
+            }
+            user.Phone = phoneStr ?? user.Phone;
+        }
         if (update.TryGetValue("dob", out var dobStr))
         {
             var s = dobStr?.ToString();
-            user.Dob = string.IsNullOrWhiteSpace(s) ? null : DateOnly.Parse(s!);
+            if (!string.IsNullOrWhiteSpace(s))
+            {
+                if (!DateOnly.TryParseExact(s, new[] { "yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy" }, out var dob))
+                {
+                    return Results.BadRequest(new { message = "Định dạng ngày sinh không hợp lệ. Sử dụng yyyy-MM-dd, dd/MM/yyyy hoặc MM/dd/yyyy" });
+                }
+                user.Dob = dob;
+            }
+            else
+            {
+                user.Dob = null;
+            }
         }
         if (update.TryGetValue("address", out var address)) user.Address = address?.ToString() ?? user.Address;
 
@@ -134,6 +173,76 @@ public class UserService
     {
         var users = await _dbContext.Users.ToListAsync();
         return Results.Ok(users.Select(ToResponseUser));
+    }
+
+    // Validation methods
+    private ValidationResult ValidateRegisterRequest(RegisterRequest req)
+    {
+        // Check required fields
+        if (string.IsNullOrWhiteSpace(req.email))
+            return new ValidationResult(false, "Email là bắt buộc");
+        
+        if (string.IsNullOrWhiteSpace(req.password))
+            return new ValidationResult(false, "Mật khẩu là bắt buộc");
+        
+        if (string.IsNullOrWhiteSpace(req.fullname))
+            return new ValidationResult(false, "Họ tên là bắt buộc");
+
+        // Validate email format
+        if (!IsValidEmail(req.email))
+            return new ValidationResult(false, "Định dạng email không hợp lệ");
+
+        // Validate password
+        if (!IsValidPassword(req.password))
+            return new ValidationResult(false, "Mật khẩu phải có ít nhất 6 ký tự, chứa ít nhất 1 chữ cái và 1 số");
+
+        // Validate phone if provided
+        if (!string.IsNullOrWhiteSpace(req.phone) && !IsValidPhoneNumber(req.phone))
+            return new ValidationResult(false, "Số điện thoại không hợp lệ (10-11 số, bắt đầu 0)");
+
+        return new ValidationResult(true, "");
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var emailAttribute = new EmailAddressAttribute();
+            return emailAttribute.IsValid(email);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool IsValidPassword(string password)
+    {
+        if (password.Length < 6) return false;
+        
+        bool hasLetter = password.Any(char.IsLetter);
+        bool hasDigit = password.Any(char.IsDigit);
+        
+        return hasLetter && hasDigit;
+    }
+
+    private bool IsValidPhoneNumber(string phone)
+    {
+        // Vietnam phone format: 10-11 digits, starts with 0
+        var phoneRegex = new Regex(@"^0\d{9,10}$");
+        return phoneRegex.IsMatch(phone);
+    }
+}
+
+public class ValidationResult
+{
+    public bool IsValid { get; set; }
+    public string ErrorMessage { get; set; }
+
+    public ValidationResult(bool isValid, string errorMessage)
+    {
+        IsValid = isValid;
+        ErrorMessage = errorMessage;
     }
 }
 
